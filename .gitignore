@@ -42,6 +42,7 @@ out/
 # DOCKER / INFRA DATA (НЕ КОММИТИМ)
 # ======================================================
 infra_data/*
+!infra_data/**/
 !infra_data/**/.gitkeep
 volumes/
 *.pid
