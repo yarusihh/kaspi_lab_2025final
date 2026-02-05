@@ -1,0 +1,140 @@
+version: "3.9"
+
+# =====================================================
+# NETWORK
+# =====================================================
+networks:
+  kaspi_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.50.0.0/24
+          gateway: 10.50.0.1
+
+
+# =====================================================
+# SERVICES
+# =====================================================
+services:
+
+  # =========================
+  # POSTGRES
+  # =========================
+  postgres:
+    image: postgres:16
+    container_name: kaspi_postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    volumes:
+      - ${POSTGRES_DATA}:/var/lib/postgresql/data
+
+    networks:
+      kaspi_net:
+        ipv4_address: 10.50.0.10
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  # =========================
+  # MINIO
+  # =========================
+  minio:
+    image: minio/minio:latest
+    container_name: kaspi_minio
+    restart: unless-stopped
+
+    command: server /data --console-address ":9001"
+
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+
+    volumes:
+      - ${MINIO_DATA}:/data
+
+    networks:
+      kaspi_net:
+        ipv4_address: 10.50.0.20
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  # =========================
+  # KAFKA (KRaft, single node)
+  # =========================
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: kaspi_kafka
+    restart: unless-stopped
+
+    environment:
+      KAFKA_CFG_NODE_ID: 0
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+
+    volumes:
+      - ${KAFKA_DATA}:/bitnami/kafka
+
+    networks:
+      kaspi_net:
+        ipv4_address: 10.50.0.30
+
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+
+  # =========================
+  # PROMETHEUS (metrics collector)
+  # =========================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: kaspi_prometheus
+    restart: unless-stopped
+
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ${PROMETHEUS_DATA}:/prometheus
+
+    networks:
+      kaspi_net:
+        ipv4_address: 10.50.0.40
+
+
+  # =========================
+  # GRAFANA (dashboards)
+  # =========================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: kaspi_grafana
+    restart: unless-stopped
+
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+
+    volumes:
+      - ${GRAFANA_DATA}:/var/lib/grafana
+
+    networks:
+      kaspi_net:
+        ipv4_address: 10.50.0.50
