@@ -1,10 +1,10 @@
 version: "3.9"
 
 # =====================================================
-# NETWORK
+# NETWORKS
 # =====================================================
 networks:
-  kaspi_net:
+  minio_net:
     driver: bridge
     ipam:
       config:
@@ -18,33 +18,6 @@ networks:
 services:
 
   # =========================
-  # POSTGRES
-  # =========================
-  postgres:
-    image: postgres:16
-    container_name: kaspi_postgres
-    restart: unless-stopped
-
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-
-    volumes:
-      - ${POSTGRES_DATA}:/var/lib/postgresql/data
-
-    networks:
-      kaspi_net:
-        ipv4_address: 10.50.0.10
-
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-
-  # =========================
   # MINIO
   # =========================
   minio:
@@ -55,86 +28,52 @@ services:
     command: server /data --console-address ":9001"
 
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_ROOT_USER: root
+      MINIO_ROOT_PASSWORD: rootpassword123
 
     volumes:
-      - ${MINIO_DATA}:/data
+      - ./infra_data/minio:/data
 
     networks:
-      kaspi_net:
-        ipv4_address: 10.50.0.20
+      minio_net:
+        ipv4_address: 10.50.0.10
+
+    # наружу только console (для nginx)
+    ports:
+      - "127.0.0.1:9001:9001"
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
 
   # =========================
-  # KAFKA (KRaft, single node)
+  # MINIO AUTO INIT
   # =========================
-  kafka:
-    image: bitnami/kafka:latest
-    container_name: kaspi_kafka
-    restart: unless-stopped
+  minio-init:
+    image: minio/mc:latest
+    container_name: kaspi_minio_init
 
-    environment:
-      KAFKA_CFG_NODE_ID: 0
-      KAFKA_CFG_PROCESS_ROLES: controller,broker
-      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
-      ALLOW_PLAINTEXT_LISTENER: "yes"
+    depends_on:
+      minio:
+        condition: service_healthy
 
-    volumes:
-      - ${KAFKA_DATA}:/bitnami/kafka
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://10.50.0.10:9000 root rootpassword123 &&
+
+      mc mb -p local/files || true &&
+
+      mc admin user add local app apppassword123 || true &&
+      mc admin policy attach local readwrite --user app &&
+
+      echo 'MinIO initialized'
+      "
 
     networks:
-      kaspi_net:
-        ipv4_address: 10.50.0.30
+      minio_net:
+        ipv4_address: 10.50.0.11
 
-    healthcheck:
-      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-
-
-  # =========================
-  # PROMETHEUS (metrics collector)
-  # =========================
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: kaspi_prometheus
-    restart: unless-stopped
-
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ${PROMETHEUS_DATA}:/prometheus
-
-    networks:
-      kaspi_net:
-        ipv4_address: 10.50.0.40
-
-
-  # =========================
-  # GRAFANA (dashboards)
-  # =========================
-  grafana:
-    image: grafana/grafana:latest
-    container_name: kaspi_grafana
-    restart: unless-stopped
-
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
-
-    volumes:
-      - ${GRAFANA_DATA}:/var/lib/grafana
-
-    networks:
-      kaspi_net:
-        ipv4_address: 10.50.0.50
+    restart: "no"
