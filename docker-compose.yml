@@ -1,10 +1,10 @@
 version: "3.9"
 
 # =====================================================
-# NETWORKS
+# NETWORK
 # =====================================================
 networks:
-  minio_net:
+  lab_net:
     driver: bridge
     ipam:
       config:
@@ -17,9 +17,9 @@ networks:
 # =====================================================
 services:
 
-  # =========================
-  # MINIO
-  # =========================
+  # =====================================================
+  # MINIO SERVER
+  # =====================================================
   minio:
     image: minio/minio:latest
     container_name: kaspi_minio
@@ -31,16 +31,16 @@ services:
       MINIO_ROOT_USER: root
       MINIO_ROOT_PASSWORD: rootpassword123
 
+      # важно для reverse proxy
+      MINIO_BROWSER_REDIRECT_URL: https://kaspi.icod.kz/minio
+      MINIO_SERVER_URL: https://kaspi.icod.kz
+
     volumes:
       - ./infra_data/minio:/data
 
     networks:
-      minio_net:
+      lab_net:
         ipv4_address: 10.50.0.10
-
-    # наружу только console (для nginx)
-    ports:
-      - "127.0.0.1:9001:9001"
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -49,9 +49,10 @@ services:
       retries: 10
 
 
-  # =========================
+
+  # =====================================================
   # MINIO AUTO INIT
-  # =========================
+  # =====================================================
   minio-init:
     image: minio/mc:latest
     container_name: kaspi_minio_init
@@ -62,18 +63,26 @@ services:
 
     entrypoint: >
       /bin/sh -c "
+      echo 'Wait MinIO...' &&
       mc alias set local http://10.50.0.10:9000 root rootpassword123 &&
-
+      
+      echo 'Create bucket...' &&
       mc mb -p local/files || true &&
-
+      
+      echo 'Enable versioning...' &&
+      mc version enable local/files || true &&
+      
+      echo 'Create app user...' &&
       mc admin user add local app apppassword123 || true &&
-      mc admin policy attach local readwrite --user app &&
-
-      echo 'MinIO initialized'
+      
+      echo 'Attach readwrite policy...' &&
+      mc admin policy attach local readwrite --user app || true &&
+      
+      echo 'MinIO INIT OK'
       "
 
     networks:
-      minio_net:
+      lab_net:
         ipv4_address: 10.50.0.11
 
     restart: "no"
