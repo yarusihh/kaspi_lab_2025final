@@ -1,0 +1,2 @@
+ALTER TABLE files
+    DROP COLUMN IF EXISTS s3_key;
