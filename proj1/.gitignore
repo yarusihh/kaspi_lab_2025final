@@ -1,7 +1,19 @@
 # Maven
-/target/
+**/target/
 !.mvn/wrapper/maven-wrapper.jar
+!**/.mvn/wrapper/maven-wrapper.jar
 /.mvn/timing.properties
+HELP.md
+
+# Gradle / NetBeans (safe to ignore even if unused)
+**/build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
 
 # Java
 *.class
@@ -25,11 +37,13 @@ Thumbs.db
 .vscode/
 
 # IDE (Eclipse/STS)
+.apt_generated
 .project
 .classpath
 .settings/
 .factorypath
 .springBeans
+.sts4-cache
 
 # Env
 .env
@@ -40,7 +54,7 @@ docker-data/
 postgres-data/
 minio-data/
 
-# Spring configs (local-only)
+# Spring local configs
 application-local.properties
 application-prod.properties
 
