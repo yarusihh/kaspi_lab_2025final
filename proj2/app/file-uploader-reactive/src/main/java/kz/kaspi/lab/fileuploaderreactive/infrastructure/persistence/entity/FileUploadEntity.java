@@ -12,11 +12,8 @@ public class FileUploadEntity {
     @Id
     private UUID id;
 
-    @Column("client_id")
-    private String clientId;
-
-    @Column("idempotency_key")
-    private String idempotencyKey;
+    @Column("checksum")
+    private String checksum;
 
     @Column("file_name")
     private String fileName;
@@ -39,9 +36,6 @@ public class FileUploadEntity {
     @Column("updated_at")
     private Instant updatedAt;
 
-    public FileUploadEntity() {
-    }
-
     public UUID getId() {
         return id;
     }
@@ -50,20 +44,12 @@ public class FileUploadEntity {
         this.id = id;
     }
 
-    public String getClientId() {
-        return clientId;
+    public String getChecksum() {
+        return checksum;
     }
 
-    public void setClientId(String clientId) {
-        this.clientId = clientId;
-    }
-
-    public String getIdempotencyKey() {
-        return idempotencyKey;
-    }
-
-    public void setIdempotencyKey(String idempotencyKey) {
-        this.idempotencyKey = idempotencyKey;
+    public void setChecksum(String checksum) {
+        this.checksum = checksum;
     }
 
     public String getFileName() {

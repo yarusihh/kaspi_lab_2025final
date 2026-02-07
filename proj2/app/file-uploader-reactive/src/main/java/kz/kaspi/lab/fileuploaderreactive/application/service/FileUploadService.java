@@ -1,16 +1,15 @@
 package kz.kaspi.lab.fileuploaderreactive.application.service;
 
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.UUID;
+import kz.kaspi.lab.fileuploaderreactive.api.dto.AcceptedUploadResponse;
 import kz.kaspi.lab.fileuploaderreactive.application.port.in.FileUploadUseCase;
 import kz.kaspi.lab.fileuploaderreactive.application.port.out.FileMetadataRepository;
-import kz.kaspi.lab.fileuploaderreactive.application.port.out.FileStorageClient;
-import kz.kaspi.lab.fileuploaderreactive.application.port.out.IdempotencyRepository;
 import kz.kaspi.lab.fileuploaderreactive.application.port.out.TemporaryFileManager;
 import kz.kaspi.lab.fileuploaderreactive.domain.model.FileUploadRecord;
-import kz.kaspi.lab.fileuploaderreactive.domain.value.UploadStatus;
 import kz.kaspi.lab.fileuploaderreactive.infrastructure.config.UploadProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
@@ -19,72 +18,49 @@ import reactor.core.publisher.Mono;
 @Service
 public class FileUploadService implements FileUploadUseCase {
 
-    private final IdempotencyRepository idempotencyRepository;
-    private final FileMetadataRepository fileMetadataRepository;
-    private final FileStorageClient fileStorageClient;
-    private final TemporaryFileManager temporaryFileManager;
+    private static final Logger log = LoggerFactory.getLogger(FileUploadService.class);
+
     private final UploadProperties uploadProperties;
+    private final TemporaryFileManager temporaryFileManager;
+    private final UploadAsyncProcessor uploadAsyncProcessor;
+    private final FileMetadataRepository fileMetadataRepository;
 
     public FileUploadService(
-            IdempotencyRepository idempotencyRepository,
-            FileMetadataRepository fileMetadataRepository,
-            FileStorageClient fileStorageClient,
+            UploadProperties uploadProperties,
             TemporaryFileManager temporaryFileManager,
-            UploadProperties uploadProperties
+            UploadAsyncProcessor uploadAsyncProcessor,
+            FileMetadataRepository fileMetadataRepository
     ) {
-        this.idempotencyRepository = idempotencyRepository;
-        this.fileMetadataRepository = fileMetadataRepository;
-        this.fileStorageClient = fileStorageClient;
-        this.temporaryFileManager = temporaryFileManager;
         this.uploadProperties = uploadProperties;
+        this.temporaryFileManager = temporaryFileManager;
+        this.uploadAsyncProcessor = uploadAsyncProcessor;
+        this.fileMetadataRepository = fileMetadataRepository;
     }
 
     @Override
-    public Mono<FileUploadRecord> upload(String clientId, String idempotencyKey, FilePart filePart) {
-        return idempotencyRepository.findByClientAndKey(clientId, idempotencyKey)
-                .switchIfEmpty(processNewUpload(clientId, idempotencyKey, filePart))
+    public Mono<AcceptedUploadResponse> upload(FilePart filePart) {
+        String requestId = UUID.randomUUID().toString();
+        String contentType = filePart.headers().getContentType() != null
+                ? filePart.headers().getContentType().toString()
+                : MediaType.APPLICATION_OCTET_STREAM_VALUE;
+
+        return temporaryFileManager.createFrom(filePart)
+                .doOnNext(tempFile -> {
+                    log.info("Request accepted and delegated to async processor: requestId={}, filename={}",
+                            requestId, filePart.filename());
+                    uploadAsyncProcessor.submit(new UploadTask(requestId, filePart.filename(), contentType, tempFile));
+                })
+                .map(ignored -> new AcceptedUploadResponse(
+                        requestId,
+                        "IN_PROCESS",
+                        "File accepted. Processing asynchronously.",
+                        Instant.now()
+                ))
                 .timeout(uploadProperties.timeout());
     }
 
     @Override
     public Mono<FileUploadRecord> getById(String uploadId) {
         return fileMetadataRepository.findById(uploadId);
-    }
-
-    private Mono<FileUploadRecord> processNewUpload(String clientId, String idempotencyKey, FilePart filePart) {
-        return idempotencyRepository.reserve(clientId, idempotencyKey)
-                .then(temporaryFileManager.createFrom(filePart))
-                .flatMap(tempFile -> uploadAndPersist(clientId, idempotencyKey, filePart, tempFile)
-                        .flatMap(result -> temporaryFileManager.cleanup(tempFile).thenReturn(result))
-                        .onErrorResume(error -> temporaryFileManager.cleanup(tempFile).then(Mono.error(error))))
-                .onErrorResume(error -> idempotencyRepository.release(clientId, idempotencyKey).then(Mono.error(error)));
-    }
-
-    private Mono<FileUploadRecord> uploadAndPersist(
-            String clientId,
-            String idempotencyKey,
-            FilePart filePart,
-            Path tempFile
-    ) {
-        String contentType = filePart.headers().getContentType() != null
-                ? filePart.headers().getContentType().toString()
-                : MediaType.APPLICATION_OCTET_STREAM_VALUE;
-
-        return fileStorageClient.upload(tempFile, filePart.filename(), contentType)
-                .flatMap(objectKey -> {
-                    FileUploadRecord record = new FileUploadRecord(
-                            UUID.randomUUID(),
-                            clientId,
-                            idempotencyKey,
-                            filePart.filename(),
-                            contentType,
-                            -1L,
-                            objectKey,
-                            UploadStatus.COMPLETED,
-                            Instant.now(),
-                            Instant.now()
-                    );
-                    return fileMetadataRepository.save(record);
-                });
     }
 }

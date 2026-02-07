@@ -7,6 +7,9 @@ public record StorageProperties(
         String endpoint,
         String bucket,
         String accessKey,
-        String secretKey
+        String secretKey,
+        String region,
+        boolean pathStyle,
+        boolean sslEnabled
 ) {
 }

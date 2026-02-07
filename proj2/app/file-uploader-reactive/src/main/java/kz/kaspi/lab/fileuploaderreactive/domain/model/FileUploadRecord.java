@@ -6,8 +6,7 @@ import kz.kaspi.lab.fileuploaderreactive.domain.value.UploadStatus;
 
 public record FileUploadRecord(
         UUID id,
-        String clientId,
-        String idempotencyKey,
+        String checksum,
         String fileName,
         String contentType,
         long sizeBytes,

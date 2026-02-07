@@ -8,4 +8,6 @@ public interface FileMetadataRepository {
     Mono<FileUploadRecord> save(FileUploadRecord record);
 
     Mono<FileUploadRecord> findById(String uploadId);
+
+    Mono<Void> deleteById(String uploadId);
 }
