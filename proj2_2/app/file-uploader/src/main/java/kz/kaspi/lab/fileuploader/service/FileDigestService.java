@@ -15,7 +15,7 @@ public class FileDigestService {
 
     public Mono<FileDigest> digest(FilePart file) {
         return toBytes(file)
-                .map(bytes -> new FileDigest(sha256Hex(bytes), bytes.length));
+                .map(bytes -> new FileDigest(sha256Hex(bytes), bytes.length, bytes));
     }
 
     private Mono<byte[]> toBytes(FilePart file) {
@@ -39,6 +39,6 @@ public class FileDigestService {
         }
     }
 
-    public record FileDigest(String hash, int sizeInBytes) {
+    public record FileDigest(String hash, int sizeInBytes, byte[] bytes) {
     }
 }

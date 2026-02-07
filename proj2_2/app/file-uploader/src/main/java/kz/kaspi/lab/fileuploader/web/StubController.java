@@ -1,12 +1,8 @@
 package kz.kaspi.lab.fileuploader.web;
 
-import kz.kaspi.lab.fileuploader.model.FileEntity;
-import kz.kaspi.lab.fileuploader.repository.FileRepository;
-import kz.kaspi.lab.fileuploader.service.FileDigestService;
-import kz.kaspi.lab.fileuploader.service.FileProcessingLockService;
+import kz.kaspi.lab.fileuploader.service.FileUploadProcessingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,27 +11,17 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 @Controller
 public class StubController {
 
     private static final Logger log = LoggerFactory.getLogger(StubController.class);
-    private final FileDigestService fileDigestService;
-    private final FileProcessingLockService fileProcessingLockService;
-    private final FileRepository fileRepository;
+    private final FileUploadProcessingService fileUploadProcessingService;
 
-    public StubController(
-            FileDigestService fileDigestService,
-            FileProcessingLockService fileProcessingLockService,
-            FileRepository fileRepository
-    ) {
-        this.fileDigestService = fileDigestService;
-        this.fileProcessingLockService = fileProcessingLockService;
-        this.fileRepository = fileRepository;
+    public StubController(FileUploadProcessingService fileUploadProcessingService) {
+        this.fileUploadProcessingService = fileUploadProcessingService;
     }
 
     @GetMapping("/")
@@ -76,22 +62,8 @@ public class StubController {
                 file.headers()
         );
 
-        return fileDigestService.digest(file)
-                .flatMap(fileDigest -> {
-                    String hash = fileDigest.hash();
-                    return fileProcessingLockService.markInProgress(hash, file.filename())
-                            .flatMap(locked -> {
-                                if (!locked) {
-                                    return Mono.just(buildAlreadyProcessingResponse());
-                                }
-
-                                return saveFileEntity(file, hash, fileDigest.sizeInBytes())
-                                        .map(saved -> buildAcceptedResponse())
-                                        .onErrorResume(DataIntegrityViolationException.class, ex ->
-                                                fileProcessingLockService.removeLock(hash)
-                                                        .thenReturn(buildAlreadyExistsInDbResponse()));
-                            });
-                })
+        return fileUploadProcessingService.process(file)
+                .map(this::toHttpResponse)
                 .onErrorResume(ex -> {
                     log.error("Upload stub failed", ex);
                     return Mono.just(ResponseEntity.internalServerError().body(responseBody(false, "failed to process upload")));
@@ -102,30 +74,14 @@ public class StubController {
         return ResponseEntity.accepted().body(responseBody(true, "file accepted for processing"));
     }
 
-    private ResponseEntity<Map<String, Object>> buildAlreadyProcessingResponse() {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(responseBody(false, "file is already in processing"));
-    }
-
-    private ResponseEntity<Map<String, Object>> buildAlreadyExistsInDbResponse() {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(responseBody(false, "file already exists in database"));
-    }
-
-    private FileEntity buildFileEntity(FilePart file, String hash, int sizeInBytes) {
-        UUID uuid = UUID.randomUUID();
-
-        return new FileEntity(
-                null,
-                uuid,
-                LocalDateTime.now(),
-                file.filename(),
-                (long) sizeInBytes,
-                hash
-        );
-    }
-
-    private Mono<FileEntity> saveFileEntity(FilePart file, String hash, int sizeInBytes) {
-        FileEntity entity = buildFileEntity(file, hash, sizeInBytes);
-        return fileRepository.save(entity);
+    private ResponseEntity<Map<String, Object>> toHttpResponse(FileUploadProcessingService.UploadStatus status) {
+        return switch (status) {
+            case ACCEPTED -> buildAcceptedResponse();
+            case ALREADY_PROCESSING -> ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(responseBody(false, "file is already in processing"));
+            case ALREADY_EXISTS_IN_DB -> ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(responseBody(false, "file already exists in database"));
+        };
     }
 
     private Map<String, Object> responseBody(boolean success, String msg) {

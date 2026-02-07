@@ -20,6 +20,7 @@
 
     <properties>
         <java.version>17</java.version>
+        <aws.sdk.version>2.25.62</aws.sdk.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -74,6 +75,13 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis-reactive</artifactId>
+        </dependency>
+
+        <!-- ===================== S3 (AWS SDK v2) ===================== -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>${aws.sdk.version}</version>
         </dependency>
 
         <!-- ===================== TEMPLATE ENGINE ===================== -->
