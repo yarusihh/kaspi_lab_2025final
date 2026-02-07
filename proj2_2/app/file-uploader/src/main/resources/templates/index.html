@@ -3,302 +3,340 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kaspi File Stress Tester</title>
+    <title>Kaspi File Uploader</title>
     <style>
         :root {
-            --primary: #4f46e5;
+            --primary: #0f766e;
             --bg: #f8fafc;
             --card: #ffffff;
-            --border: #e2e8f0;
-            --success: #10b981;
-            --error: #ef4444;
-            --warning: #f59e0b;
+            --border: #dbe1ea;
+            --ok: #16a34a;
+            --err: #dc2626;
+            --text: #0f172a;
+            --muted: #64748b;
         }
 
+        * { box-sizing: border-box; }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
             margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 2rem;
+            font-family: Segoe UI, Tahoma, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #edf3f9 100%);
+            color: var(--text);
+            padding: 24px;
         }
 
         .container {
-            width: 100%;
-            max-width: 850px;
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            gap: 16px;
         }
 
-        .config-card {
+        .card {
             background: var(--card);
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
             border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
         }
 
-        h2 { margin-top: 0; color: #1e293b; font-size: 1.25rem; }
+        h1, h2 {
+            margin: 0 0 10px;
+        }
 
-        .file-inputs {
+        .sub {
+            margin: 0 0 14px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        form {
+            display: grid;
+            gap: 12px;
+        }
+
+        .row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
+            gap: 12px;
         }
 
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
+        label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-weight: 600;
         }
-
-        label { font-weight: 600; font-size: 0.85rem; color: #64748b; }
 
         input[type="file"] {
-            padding: 0.5rem;
+            width: 100%;
             border: 1px solid var(--border);
-            border-radius: 0.5rem;
-            font-size: 0.8rem;
+            border-radius: 10px;
+            padding: 9px;
             background: #fff;
         }
 
-        .modes {
-            margin-bottom: 2rem;
-            padding: 1.2rem;
-            background: #f1f5f9;
-            border-radius: 0.75rem;
-        }
-
-        .mode-option {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 0.8rem;
+        button {
+            border: 0;
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-weight: 700;
+            font-size: 14px;
             cursor: pointer;
-            padding: 8px;
-            border-radius: 6px;
-            transition: background 0.2s;
+            color: #fff;
+            background: var(--primary);
         }
 
-        .mode-option:hover { background: #e2e8f0; }
-        .mode-option input { cursor: pointer; }
+        button:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
 
-        .btn-run {
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
             width: 100%;
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 1rem;
-            border-radius: 0.75rem;
-            font-weight: 700;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: transform 0.1s, opacity 0.2s;
+            border-collapse: collapse;
+            min-width: 760px;
         }
 
-        .btn-run:active { transform: scale(0.99); }
-        .btn-run:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        .status-card {
-            background: var(--card);
-            border-radius: 1rem;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            overflow: hidden;
-            border: 1px solid var(--border);
-        }
-
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th {
-            background: #f8fafc;
-            padding: 1rem;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            color: #64748b;
+        th, td {
             border-bottom: 1px solid var(--border);
+            text-align: left;
+            padding: 10px 8px;
+            font-size: 13px;
+            vertical-align: top;
         }
 
-        td { padding: 1rem; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
-
-        .badge {
-            padding: 0.25rem 0.6rem;
-            border-radius: 1rem;
-            font-size: 0.7rem;
+        th {
+            color: var(--muted);
             font-weight: 700;
-            display: inline-block;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .02em;
+            white-space: nowrap;
         }
 
-        .badge-pending { background: #e2e8f0; color: #475569; }
-        .badge-uploading { background: #fef9c3; color: #854d0e; }
-        .badge-ok { background: #dcfce7; color: #15803d; }
-        .badge-error { background: #fee2e2; color: #b91c1c; }
+        .ok { color: var(--ok); font-weight: 700; }
+        .err { color: var(--err); font-weight: 700; }
+        .mono { font-family: Consolas, monospace; }
 
-        .progress-bar {
-            height: 8px;
-            background: #e2e8f0;
-            border-radius: 4px;
-            overflow: hidden;
-            width: 120px;
-        }
-        .progress-fill {
-            height: 100%;
-            background: var(--primary);
-            width: 0%;
-            transition: width 0.2s;
+        @media (max-width: 760px) {
+            .row { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-
 <div class="container">
-    <div class="config-card">
-        <h2>🚀 Залповая отправка файлов</h2>
-        
-        <div class="file-inputs">
-            <div class="input-group">
-                <label>Файл A (Основной)</label>
-                <input type="file" id="fileA">
-            </div>
-            <div class="input-group">
-                <label>Файл B (Вспомогательный)</label>
-                <input type="file" id="fileB">
-            </div>
-        </div>
+    <div class="card">
+        <h1>Загрузка двух файлов</h1>
+        <p class="sub">Endpoint: <code>https://kaspi.icod.kz/api/v1/upload/</code></p>
 
-        <div class="modes">
-            <label style="display: block; margin-bottom: 10px; font-weight: bold; color: #475569;">Режим нагрузки:</label>
-            <label class="mode-option">
-                <input type="radio" name="mode" value="2x2" checked>
-                <span><b>Симметрия:</b> 2x File A + 2x File B (Разом)</span>
-            </label>
-            <label class="mode-option">
-                <input type="radio" name="mode" value="4x2">
-                <span><b>Перекос:</b> 4x File A + 2x File B (Разом)</span>
-            </label>
-        </div>
+        <form id="uploadForm">
+            <div class="row">
+                <div>
+                    <label for="fileA">Файл A</label>
+                    <input id="fileA" name="fileA" type="file" required>
+                </div>
+                <div>
+                    <label for="fileB">Файл B</label>
+                    <input id="fileB" name="fileB" type="file" required>
+                </div>
+            </div>
+            <button id="submitBtn" type="submit">Добавить в обработку</button>
+        </form>
 
-        <button id="runBtn" class="btn-run" onclick="startStressTest()">ЗАПУСТИТЬ ТЕСТ</button>
+        <div class="table-wrap" style="margin-top: 14px;">
+            <table>
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Файл</th>
+                    <th>HTTP</th>
+                    <th>Статус</th>
+                    <th>Сообщение</th>
+                </tr>
+                </thead>
+                <tbody id="resultBody"></tbody>
+            </table>
+        </div>
     </div>
 
-    <div class="status-card">
-        <table>
-            <thead>
+    <div class="card">
+        <h2>Данные из БД</h2>
+        <p class="sub" id="dbInfo">Загрузка...</p>
+        <div class="table-wrap">
+            <table>
+                <thead>
                 <tr>
-                    <th>№</th>
-                    <th>Файл</th>
-                    <th>Дубликат</th>
-                    <th>Прогресс</th>
-                    <th>Статус API</th>
+                    <th>ID</th>
+                    <th>UUID</th>
+                    <th>Дата</th>
+                    <th>Имя</th>
+                    <th>Размер</th>
+                    <th>Hash</th>
+                    <th>Ссылка</th>
                 </tr>
-            </thead>
-            <tbody id="statusTable">
-                </tbody>
-        </table>
+                </thead>
+                <tbody id="dbBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Данные из Storage</h2>
+        <p class="sub" id="s3Info">Загрузка...</p>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>UUID</th>
+                    <th>Дата</th>
+                    <th>Имя</th>
+                    <th>Размер</th>
+                    <th>Hash</th>
+                    <th>Ссылка</th>
+                </tr>
+                </thead>
+                <tbody id="s3Body"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <script>
-    // URL для отправки (можешь поменять на свой)
-    const API_URL = '/'; 
+    const API_UPLOAD_URL = '/api/v1/upload/';
+    const API_DB_URL = '/api/v1/db/files';
+    const API_S3_URL = '/api/v1/storage/files';
 
-    async function startStressTest() {
+    const form = document.getElementById('uploadForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const resultBody = document.getElementById('resultBody');
+    const dbBody = document.getElementById('dbBody');
+    const s3Body = document.getElementById('s3Body');
+    const dbInfo = document.getElementById('dbInfo');
+    const s3Info = document.getElementById('s3Info');
+
+    window.addEventListener('load', async () => {
+        await refreshTables();
+    });
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
         const fileA = document.getElementById('fileA').files[0];
         const fileB = document.getElementById('fileB').files[0];
-        const mode = document.querySelector('input[name="mode"]:checked').value;
-        const tableBody = document.getElementById('statusTable');
-        const runBtn = document.getElementById('runBtn');
 
         if (!fileA || !fileB) {
-            alert('Пожалуйста, выберите оба файла (A и B)!');
+            alert('Нужно выбрать оба файла.');
             return;
         }
 
-        // Очищаем таблицу перед тестом
-        tableBody.innerHTML = '';
-        runBtn.disabled = true;
+        submitBtn.disabled = true;
+        resultBody.innerHTML = '';
 
-        const queue = [];
-        
-        // Формируем очередь задач согласно режиму
-        if (mode === '2x2') {
-            queue.push({ file: fileA, name: fileA.name, label: 'A' }, { file: fileA, name: fileA.name, label: 'A' });
-            queue.push({ file: fileB, name: fileB.name, label: 'B' }, { file: fileB, name: fileB.name, label: 'B' });
-        } else {
-            for(let i=0; i<4; i++) queue.push({ file: fileA, name: fileA.name, label: 'A' });
-            for(let i=0; i<2; i++) queue.push({ file: fileB, name: fileB.name, label: 'B' });
+        const tasks = [fileA, fileB].map((file, index) => uploadOne(file, index + 1));
+        await Promise.all(tasks);
+        await refreshTables();
+
+        submitBtn.disabled = false;
+    });
+
+    async function uploadOne(file, index) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch(API_UPLOAD_URL, {
+                method: 'POST',
+                body: formData
+            });
+
+            const payload = await response.json().catch(() => ({}));
+            const ok = response.ok && payload.success !== false && payload.sucess !== false;
+            const msg = payload.msg || (ok ? 'Успешно' : 'Ошибка без сообщения');
+            appendUploadRow(index, file.name, response.status, ok, msg);
+        } catch (error) {
+            appendUploadRow(index, file.name, 'NETWORK', false, `Ошибка сети: ${error.message || error}`);
+        }
+    }
+
+    async function refreshTables() {
+        const [dbPayload, s3Payload] = await Promise.all([fetchJson(API_DB_URL), fetchJson(API_S3_URL)]);
+        renderFilesTable(dbBody, dbInfo, dbPayload, 'БД');
+        renderFilesTable(s3Body, s3Info, s3Payload, 'Storage');
+    }
+
+    async function fetchJson(url) {
+        try {
+            const response = await fetch(url, { method: 'GET' });
+            const payload = await response.json().catch(() => ({}));
+            payload.__http = response.status;
+            return payload;
+        } catch (e) {
+            return { success: false, msg: `Ошибка сети: ${e.message || e}`, files: [], __http: 'NETWORK' };
+        }
+    }
+
+    function renderFilesTable(bodyEl, infoEl, payload, sourceName) {
+        const files = Array.isArray(payload.files) ? payload.files : [];
+        const success = payload.success !== false && payload.sucess !== false;
+        const msg = payload.msg || '';
+
+        infoEl.textContent = `${sourceName}: ${success ? 'OK' : 'ERROR'} | HTTP: ${payload.__http} | ${msg} | Записей: ${files.length}`;
+        bodyEl.innerHTML = '';
+
+        if (!files.length) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td colspan="7">Нет данных</td>';
+            bodyEl.appendChild(tr);
+            return;
         }
 
-        // Запускаем все запросы параллельно
-        const promises = queue.map((task, index) => {
-            return sendFileRequest(task, index + 1);
-        });
-
-        await Promise.allSettled(promises);
-        runBtn.disabled = false;
-        console.log('Все запросы обработаны');
+        for (const file of files) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="mono">${safe(file.id)}</td>
+                <td class="mono">${safe(file.uuid)}</td>
+                <td>${safe(file.uploadDate)}</td>
+                <td>${safe(file.name)}</td>
+                <td class="mono">${safe(file.size)}</td>
+                <td class="mono">${safe(file.hash)}</td>
+                <td>${file.url ? `<a href="${escapeHtml(file.url)}" target="_blank" rel="noopener noreferrer">Открыть</a>` : '-'}</td>
+            `;
+            bodyEl.appendChild(tr);
+        }
     }
 
-    function sendFileRequest(task, id) {
-        return new Promise((resolve) => {
-            const tableBody = document.getElementById('statusTable');
-            const rowId = `row-${id}`;
-            
-            // Создаем строку в таблице
-            const row = document.createElement('tr');
-            row.id = rowId;
-            row.innerHTML = `
-                <td>#${id}</td>
-                <td><b>${task.name}</b> <small style="color:blue">[${task.label}]</small></td>
-                <td>Копия</td>
-                <td>
-                    <div class="progress-bar"><div id="bar-${id}" class="progress-fill"></div></div>
-                </td>
-                <td><span id="badge-${id}" class="badge badge-pending">WAITING</span></td>
-            `;
-            tableBody.appendChild(row);
+    function appendUploadRow(index, fileName, httpCode, ok, message) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${index}</td>
+            <td>${escapeHtml(fileName)}</td>
+            <td>${httpCode}</td>
+            <td class="${ok ? 'ok' : 'err'}">${ok ? 'OK' : 'ERROR'}</td>
+            <td>${escapeHtml(message)}</td>
+        `;
+        resultBody.appendChild(tr);
+    }
 
-            const formData = new FormData();
-            formData.append('files', task.file); // 'files' - имя поля как в Java контроллере
+    function safe(value) {
+        return value === null || value === undefined || value === '' ? '-' : escapeHtml(value);
+    }
 
-            const xhr = new XMLHttpRequest();
-            const badge = document.getElementById(`badge-${id}`);
-            const bar = document.getElementById(`bar-${id}`);
-
-            xhr.open('POST', API_URL, true);
-
-            // Отслеживание прогресса загрузки
-            xhr.upload.onprogress = (e) => {
-                if (e.lengthComputable) {
-                    const percent = Math.round((e.loaded / e.total) * 100);
-                    bar.style.width = percent + '%';
-                    badge.innerText = 'UPLOADING...';
-                    badge.className = 'badge badge-uploading';
-                }
-            };
-
-            xhr.onload = () => {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    badge.innerText = 'SUCCESS (200)';
-                    badge.className = 'badge badge-ok';
-                    bar.style.backgroundColor = 'var(--success)';
-                } else {
-                    badge.innerText = `ERR (${xhr.status})`;
-                    badge.className = 'badge badge-error';
-                }
-                resolve();
-            };
-
-            xhr.onerror = () => {
-                badge.innerText = 'CONN ERROR';
-                badge.className = 'badge badge-error';
-                resolve();
-            };
-
-            xhr.send(formData);
-        });
+    function escapeHtml(value) {
+        return String(value)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
     }
 </script>
-
 </body>
 </html>
