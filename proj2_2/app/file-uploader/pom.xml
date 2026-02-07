@@ -43,6 +43,27 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- ===================== FLYWAY + JDBC FOR MIGRATIONS ONLY ===================== -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- ===================== VALIDATION ===================== -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -89,12 +110,12 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- =====================  PROD (PROD only) ===================== -->
-		<dependency>
-			<groupId>io.github.cdimascio</groupId>
-			<artifactId>dotenv-java</artifactId>
-			<version>3.0.0</version>
-		</dependency>
+        <!-- ===================== PROD (PROD only) ===================== -->
+        <dependency>
+            <groupId>io.github.cdimascio</groupId>
+            <artifactId>dotenv-java</artifactId>
+            <version>3.0.0</version>
+        </dependency>
 
 
     </dependencies>

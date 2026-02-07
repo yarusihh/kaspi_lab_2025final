@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaspi File Stress Tester</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        /* Карточка с формой */
+        .config-card {
+            background: var(--card);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+        }
+
+        h2 { margin-top: 0; color: #1e293b; font-size: 1.25rem; }
+
+        .file-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label { font-weight: 600; font-size: 0.85rem; color: #64748b; }
+
+        input[type="file"] {
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .modes {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: #f1f5f9;
+            border-radius: 0.75rem;
+        }
+
+        .mode-option {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+        }
+
+        .btn-run {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn-run:hover { opacity: 0.9; }
+
+        /* Таблица результатов */
+        .status-card {
+            background: var(--card);
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: #f8fafc;
+            padding: 1rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #64748b;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-ok { background: #dcfce7; color: #15803d; }
+        .badge-wait { background: #fef9c3; color: #854d0e; }
+
+        .progress-bar {
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+            width: 100px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 70%; /* хардкод */
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="config-card">
+        <h2>⚙️ Конфигурация дубликатов</h2>
+        
+        <div class="file-inputs">
+            <div class="input-group">
+                <label>Файл A (Основной)</label>
+                <input type="file" id="fileA">
+            </div>
+            <div class="input-group">
+                <label>Файл B (Дополнительный)</label>
+                <input type="file" id="fileB">
+            </div>
+        </div>
+
+        <div class="modes">
+            <label style="display: block; margin-bottom: 10px;">Выберите режим атаки:</label>
+            <label class="mode-option">
+                <input type="radio" name="mode" value="2x2" checked>
+                <span><b>Режим "Симметрия":</b> по 2 копии каждого (всего 4 запроса)</span>
+            </label>
+            <label class="mode-option">
+                <input type="radio" name="mode" value="4x2">
+                <span><b>Режим "Перекос":</b> 4 копии Файла А + 2 копии Файла B</span>
+            </label>
+        </div>
+
+        <button class="btn-run" onclick="startStressTest()">ЗАПУСТИТЬ ЗАЛП</button>
+    </div>
+
+    <div class="status-card">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Файл</th>
+                    <th>Копия</th>
+                    <th>Прогресс</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody id="statusTable">
+                <tr>
+                    <td>#821</td>
+                    <td><b>document_v1.pdf</b></td>
+                    <td>Copy 1/2</td>
+                    <td><div class="progress-bar"><div class="progress-fill" style="width: 100%"></div></div></td>
+                    <td><span class="badge badge-ok">SUCCESS</span></td>
+                </tr>
+                <tr>
+                    <td>#822</td>
+                    <td><b>document_v1.pdf</b></td>
+                    <td>Copy 2/2</td>
+                    <td><div class="progress-bar"><div class="progress-fill" style="width: 40%"></div></div></td>
+                    <td><span class="badge badge-wait">UPLOADING...</span></td>
+                </tr>
+                <tr>
+                    <td>#823</td>
+                    <td><b>image_raw.png</b></td>
+                    <td>Copy 1/2</td>
+                    <td><div class="progress-bar"><div class="progress-fill" style="width: 0%"></div></div></td>
+                    <td><span class="badge badge-wait">PENDING</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function startStressTest() {
+        alert('Логика залпа готова к привязке! Сейчас в таблице пример того, как это будет выглядеть.');
+    }
+</script>
+
+</body>
+</html>
