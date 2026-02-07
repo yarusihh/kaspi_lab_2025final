@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kaspi File Uploader</title>
+    <title>Проект 1 - Kaspi File Uploader</title>
     <style>
         :root {
             --primary: #0f766e;
@@ -41,8 +41,18 @@
             box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
         }
 
-        h1, h2 {
-            margin: 0 0 10px;
+        h1, h2 { margin: 0 0 10px; }
+
+        .project-badge {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 700;
+            color: #0f766e;
+            background: #ecfeff;
+            border: 1px solid #99f6e4;
+            border-radius: 999px;
+            padding: 6px 10px;
+            margin-bottom: 10px;
         }
 
         .sub {
@@ -94,9 +104,7 @@
             cursor: not-allowed;
         }
 
-        .table-wrap {
-            overflow-x: auto;
-        }
+        .table-wrap { overflow-x: auto; }
 
         table {
             width: 100%;
@@ -133,8 +141,33 @@
 <body>
 <div class="container">
     <div class="card">
+        <div class="project-badge">Проект 1</div>
         <h1>Загрузка двух файлов</h1>
-        <p class="sub">Endpoint: <code>https://kaspi.icod.kz/api/v1/upload/</code></p>
+        <p class="sub">Endpoint: <code>/api/v1/upload/</code></p>
+
+        <div style="border:1px solid #0f766e; background:#ecfeff; border-radius:10px; padding:12px; margin-bottom:14px;">
+            <strong>Информация для жюри</strong>
+            <div style="margin-top:8px; color:#0f172a; font-size:13px; line-height:1.5;">
+                Деплой-версия сервиса для вашего удобства:
+                <a href="https://kaspi.icod.kz/" target="_blank" rel="noopener noreferrer">kaspi.icod.kz</a>.
+            </div>
+            <div style="margin-top:6px; color:#0f172a; font-size:13px; line-height:1.5;">
+                Панель ваших загрузок в S3 Storage:
+                <a href="https://minio-ui.icod.kz/browser/kaspi-lab-public/" target="_blank" rel="noopener noreferrer">MinIO Browser (kaspi-lab-public)</a>.
+            </div>
+            <div style="margin-top:8px; color:#0f172a; font-size:13px; line-height:1.5;">
+                Рекомендуем активно тестировать API endpoint'ы напрямую: через API доступно больше backend-сценариев.
+            </div>
+            <div style="margin-top:8px; font-size:13px;">
+                <div><code>GET /api/v1/</code></div>
+                <div><code>POST /api/v1/upload/</code> (multipart, поле <code>file</code>)</div>
+                <div><code>GET /api/v1/db/files</code></div>
+                <div><code>GET /api/v1/storage/files</code></div>
+            </div>
+            <div style="margin-top:8px; color:#0f172a; font-size:13px; line-height:1.5;">
+                Проект развернут в Docker и принимает трафик через прокси. В инфраструктуре используются внешние зависимости: Redis, PostgreSQL, Celery и S3/MinIO в общей сети.
+            </div>
+        </div>
 
         <form id="uploadForm">
             <div class="row">

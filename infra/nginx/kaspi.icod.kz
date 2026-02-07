@@ -1,0 +1,48 @@
+server {
+    listen 80;
+    server_name kaspi.icod.kz;
+    return 301 https://$host$request_uri;
+}
+
+
+
+server {
+    listen 443 ssl http2;
+    server_name kaspi.icod.kz;
+
+
+    ssl_certificate     /etc/letsencrypt/live/kaspi.icod.kz/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/kaspi.icod.kz/privkey.pem;
+
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto https;
+
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+
+    proxy_buffering off;
+    proxy_request_buffering off;
+
+    client_max_body_size 5G;
+
+    proxy_connect_timeout 60s;
+    proxy_send_timeout 3600s;
+    proxy_read_timeout 3600s;
+
+    location / {
+        proxy_pass http://10.50.0.43:8080;
+    }
+
+
+    location /health {
+        proxy_pass http://10.50.0.43:8080/actuator/health;
+    }
+}

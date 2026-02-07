@@ -6,13 +6,11 @@ services:
       dockerfile: Dockerfile
     env_file:
       - app/file-uploader/.env
-    ports:
-      - "8080:8080"
     restart: unless-stopped
     networks:
-      kaspi_lab_net:
+      kaspi_minio_kaspi_lab_net:
         ipv4_address: 10.50.0.43
 
 networks:
-  kaspi_lab_net:
+  kaspi_minio_kaspi_lab_net:
     external: true
