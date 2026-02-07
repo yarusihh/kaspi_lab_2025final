@@ -11,6 +11,7 @@
             --card: #ffffff;
             --border: #e2e8f0;
             --success: #10b981;
+            --error: #ef4444;
             --warning: #f59e0b;
         }
 
@@ -26,10 +27,9 @@
 
         .container {
             width: 100%;
-            max-width: 800px;
+            max-width: 850px;
         }
 
-        /* Карточка с формой */
         .config-card {
             background: var(--card);
             padding: 2rem;
@@ -61,11 +61,12 @@
             border: 1px solid var(--border);
             border-radius: 0.5rem;
             font-size: 0.8rem;
+            background: #fff;
         }
 
         .modes {
             margin-bottom: 2rem;
-            padding: 1rem;
+            padding: 1.2rem;
             background: #f1f5f9;
             border-radius: 0.75rem;
         }
@@ -74,9 +75,15 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.8rem;
             cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: background 0.2s;
         }
+
+        .mode-option:hover { background: #e2e8f0; }
+        .mode-option input { cursor: pointer; }
 
         .btn-run {
             width: 100%;
@@ -87,12 +94,13 @@
             border-radius: 0.75rem;
             font-weight: 700;
             cursor: pointer;
-            transition: opacity 0.2s;
+            font-size: 1rem;
+            transition: transform 0.1s, opacity 0.2s;
         }
 
-        .btn-run:hover { opacity: 0.9; }
+        .btn-run:active { transform: scale(0.99); }
+        .btn-run:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* Таблица результатов */
         .status-card {
             background: var(--card);
             border-radius: 1rem;
@@ -101,12 +109,7 @@
             border: 1px solid var(--border);
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-
+        table { width: 100%; border-collapse: collapse; text-align: left; }
         th {
             background: #f8fafc;
             padding: 1rem;
@@ -116,33 +119,33 @@
             border-bottom: 1px solid var(--border);
         }
 
-        td {
-            padding: 1rem;
-            border-bottom: 1px solid var(--border);
-            font-size: 0.9rem;
-        }
+        td { padding: 1rem; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
 
         .badge {
-            padding: 0.25rem 0.5rem;
+            padding: 0.25rem 0.6rem;
             border-radius: 1rem;
-            font-size: 0.75rem;
-            font-weight: 600;
+            font-size: 0.7rem;
+            font-weight: 700;
+            display: inline-block;
         }
 
+        .badge-pending { background: #e2e8f0; color: #475569; }
+        .badge-uploading { background: #fef9c3; color: #854d0e; }
         .badge-ok { background: #dcfce7; color: #15803d; }
-        .badge-wait { background: #fef9c3; color: #854d0e; }
+        .badge-error { background: #fee2e2; color: #b91c1c; }
 
         .progress-bar {
-            height: 6px;
+            height: 8px;
             background: #e2e8f0;
-            border-radius: 3px;
+            border-radius: 4px;
             overflow: hidden;
-            width: 100px;
+            width: 120px;
         }
         .progress-fill {
             height: 100%;
             background: var(--primary);
-            width: 70%; /* хардкод */
+            width: 0%;
+            transition: width 0.2s;
         }
     </style>
 </head>
@@ -150,7 +153,7 @@
 
 <div class="container">
     <div class="config-card">
-        <h2>⚙️ Конфигурация дубликатов</h2>
+        <h2>🚀 Залповая отправка файлов</h2>
         
         <div class="file-inputs">
             <div class="input-group">
@@ -158,67 +161,142 @@
                 <input type="file" id="fileA">
             </div>
             <div class="input-group">
-                <label>Файл B (Дополнительный)</label>
+                <label>Файл B (Вспомогательный)</label>
                 <input type="file" id="fileB">
             </div>
         </div>
 
         <div class="modes">
-            <label style="display: block; margin-bottom: 10px;">Выберите режим атаки:</label>
+            <label style="display: block; margin-bottom: 10px; font-weight: bold; color: #475569;">Режим нагрузки:</label>
             <label class="mode-option">
                 <input type="radio" name="mode" value="2x2" checked>
-                <span><b>Режим "Симметрия":</b> по 2 копии каждого (всего 4 запроса)</span>
+                <span><b>Симметрия:</b> 2x File A + 2x File B (Разом)</span>
             </label>
             <label class="mode-option">
                 <input type="radio" name="mode" value="4x2">
-                <span><b>Режим "Перекос":</b> 4 копии Файла А + 2 копии Файла B</span>
+                <span><b>Перекос:</b> 4x File A + 2x File B (Разом)</span>
             </label>
         </div>
 
-        <button class="btn-run" onclick="startStressTest()">ЗАПУСТИТЬ ЗАЛП</button>
+        <button id="runBtn" class="btn-run" onclick="startStressTest()">ЗАПУСТИТЬ ТЕСТ</button>
     </div>
 
     <div class="status-card">
         <table>
             <thead>
                 <tr>
-                    <th>ID</th>
+                    <th>№</th>
                     <th>Файл</th>
-                    <th>Копия</th>
+                    <th>Дубликат</th>
                     <th>Прогресс</th>
-                    <th>Статус</th>
+                    <th>Статус API</th>
                 </tr>
             </thead>
             <tbody id="statusTable">
-                <tr>
-                    <td>#821</td>
-                    <td><b>document_v1.pdf</b></td>
-                    <td>Copy 1/2</td>
-                    <td><div class="progress-bar"><div class="progress-fill" style="width: 100%"></div></div></td>
-                    <td><span class="badge badge-ok">SUCCESS</span></td>
-                </tr>
-                <tr>
-                    <td>#822</td>
-                    <td><b>document_v1.pdf</b></td>
-                    <td>Copy 2/2</td>
-                    <td><div class="progress-bar"><div class="progress-fill" style="width: 40%"></div></div></td>
-                    <td><span class="badge badge-wait">UPLOADING...</span></td>
-                </tr>
-                <tr>
-                    <td>#823</td>
-                    <td><b>image_raw.png</b></td>
-                    <td>Copy 1/2</td>
-                    <td><div class="progress-bar"><div class="progress-fill" style="width: 0%"></div></div></td>
-                    <td><span class="badge badge-wait">PENDING</span></td>
-                </tr>
-            </tbody>
+                </tbody>
         </table>
     </div>
 </div>
 
 <script>
-    function startStressTest() {
-        alert('Логика залпа готова к привязке! Сейчас в таблице пример того, как это будет выглядеть.');
+    // URL для отправки (можешь поменять на свой)
+    const API_URL = '/'; 
+
+    async function startStressTest() {
+        const fileA = document.getElementById('fileA').files[0];
+        const fileB = document.getElementById('fileB').files[0];
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const tableBody = document.getElementById('statusTable');
+        const runBtn = document.getElementById('runBtn');
+
+        if (!fileA || !fileB) {
+            alert('Пожалуйста, выберите оба файла (A и B)!');
+            return;
+        }
+
+        // Очищаем таблицу перед тестом
+        tableBody.innerHTML = '';
+        runBtn.disabled = true;
+
+        const queue = [];
+        
+        // Формируем очередь задач согласно режиму
+        if (mode === '2x2') {
+            queue.push({ file: fileA, name: fileA.name, label: 'A' }, { file: fileA, name: fileA.name, label: 'A' });
+            queue.push({ file: fileB, name: fileB.name, label: 'B' }, { file: fileB, name: fileB.name, label: 'B' });
+        } else {
+            for(let i=0; i<4; i++) queue.push({ file: fileA, name: fileA.name, label: 'A' });
+            for(let i=0; i<2; i++) queue.push({ file: fileB, name: fileB.name, label: 'B' });
+        }
+
+        // Запускаем все запросы параллельно
+        const promises = queue.map((task, index) => {
+            return sendFileRequest(task, index + 1);
+        });
+
+        await Promise.allSettled(promises);
+        runBtn.disabled = false;
+        console.log('Все запросы обработаны');
+    }
+
+    function sendFileRequest(task, id) {
+        return new Promise((resolve) => {
+            const tableBody = document.getElementById('statusTable');
+            const rowId = `row-${id}`;
+            
+            // Создаем строку в таблице
+            const row = document.createElement('tr');
+            row.id = rowId;
+            row.innerHTML = `
+                <td>#${id}</td>
+                <td><b>${task.name}</b> <small style="color:blue">[${task.label}]</small></td>
+                <td>Копия</td>
+                <td>
+                    <div class="progress-bar"><div id="bar-${id}" class="progress-fill"></div></div>
+                </td>
+                <td><span id="badge-${id}" class="badge badge-pending">WAITING</span></td>
+            `;
+            tableBody.appendChild(row);
+
+            const formData = new FormData();
+            formData.append('files', task.file); // 'files' - имя поля как в Java контроллере
+
+            const xhr = new XMLHttpRequest();
+            const badge = document.getElementById(`badge-${id}`);
+            const bar = document.getElementById(`bar-${id}`);
+
+            xhr.open('POST', API_URL, true);
+
+            // Отслеживание прогресса загрузки
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    bar.style.width = percent + '%';
+                    badge.innerText = 'UPLOADING...';
+                    badge.className = 'badge badge-uploading';
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    badge.innerText = 'SUCCESS (200)';
+                    badge.className = 'badge badge-ok';
+                    bar.style.backgroundColor = 'var(--success)';
+                } else {
+                    badge.innerText = `ERR (${xhr.status})`;
+                    badge.className = 'badge badge-error';
+                }
+                resolve();
+            };
+
+            xhr.onerror = () => {
+                badge.innerText = 'CONN ERROR';
+                badge.className = 'badge badge-error';
+                resolve();
+            };
+
+            xhr.send(formData);
+        });
     }
 </script>
 
