@@ -1,375 +1,630 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Проект 1 - Kaspi File Uploader</title>
+    <title>Kaspi File Uploader Pro | Dashboard</title>
     <style>
         :root {
-            --primary: #0f766e;
-            --bg: #f8fafc;
+            --primary: #008060;
+            --primary-hover: #006e52;
+            --bg: #f1f5f9;
             --card: #ffffff;
-            --border: #dbe1ea;
-            --ok: #16a34a;
-            --err: #dc2626;
-            --text: #0f172a;
+            --border: #e2e8f0;
+            --ok: #10b981;
+            --err: #ef4444;
+            --text: #1e293b;
             --muted: #64748b;
+            --accent: #f0fdf4;
         }
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; transition: all 0.2s ease; }
 
         body {
             margin: 0;
-            font-family: Segoe UI, Tahoma, sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #edf3f9 100%);
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
             color: var(--text);
-            padding: 24px;
+            padding: 20px;
+            line-height: 1.5;
         }
 
         .container {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 0 auto;
             display: grid;
-            gap: 16px;
+            gap: 20px;
         }
 
         .card {
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 18px;
-            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
-
-        h1, h2 { margin: 0 0 10px; }
 
         .project-badge {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
             font-size: 12px;
             font-weight: 700;
-            color: #0f766e;
-            background: #ecfeff;
-            border: 1px solid #99f6e4;
-            border-radius: 999px;
-            padding: 6px 10px;
-            margin-bottom: 10px;
+            color: var(--primary);
+            background: var(--accent);
+            border: 1px solid #bbf7d0;
+            border-radius: 30px;
+            padding: 4px 12px;
+            margin-bottom: 12px;
         }
 
-        .sub {
-            margin: 0 0 14px;
-            color: var(--muted);
+        h1, h2 { margin: 0 0 8px; font-weight: 800; letter-spacing: -0.02em; }
+        h2 { font-size: 1.25rem; display: flex; align-items: center; gap: 8px; }
+
+        .sub { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.9em; }
+
+        /* Панель информации */
+        .info-panel {
+            border-left: 4px solid var(--primary);
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
             font-size: 14px;
         }
 
-        form {
-            display: grid;
-            gap: 12px;
+        .warning-box {
+            background: #fff7ed;
+            border: 1px solid #ffedd5;
+            color: #9a3412;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-weight: 500;
         }
 
-        .row {
+        /* Сетка загрузки */
+        .upload-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 16px;
+            margin-bottom: 16px;
         }
 
-        label {
-            display: block;
-            font-size: 13px;
-            margin-bottom: 6px;
-            color: var(--muted);
-            font-weight: 600;
+        .file-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
+
+        label { font-size: 13px; font-weight: 600; color: var(--muted); }
 
         input[type="file"] {
-            width: 100%;
-            border: 1px solid var(--border);
+            border: 2px dashed var(--border);
+            padding: 12px;
             border-radius: 10px;
-            padding: 9px;
+            cursor: pointer;
+            width: 100%;
             background: #fff;
         }
 
+        input[type="file"]:hover { border-color: var(--primary); background: #fafafa; }
+
         button {
-            border: 0;
-            border-radius: 10px;
-            padding: 12px 14px;
-            font-weight: 700;
-            font-size: 14px;
-            cursor: pointer;
-            color: #fff;
             background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            box-shadow: 0 2px 4px rgba(0, 128, 96, 0.2);
         }
 
-        button:disabled {
-            opacity: .6;
-            cursor: not-allowed;
+        button:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        button:disabled { background: var(--muted); cursor: not-allowed; transform: none; opacity: 0.7; }
+
+        /* Прогресс-бары */
+        .progress-container {
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 4px;
+            display: none; /* Включается через JS */
+        }
+        .progress-bar {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.2s linear;
         }
 
-        .table-wrap { overflow-x: auto; }
+        /* Таблицы */
+        .table-wrap { 
+            overflow-x: auto; 
+            margin-top: 16px; 
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 760px;
-        }
-
-        th, td {
-            border-bottom: 1px solid var(--border);
-            text-align: left;
-            padding: 10px 8px;
             font-size: 13px;
-            vertical-align: top;
+            background: white;
         }
 
         th {
+            background: #f8fafc;
+            text-align: left;
+            padding: 14px 12px;
             color: var(--muted);
-            font-weight: 700;
-            font-size: 12px;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: .02em;
-            white-space: nowrap;
+            font-size: 11px;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid var(--border);
         }
 
-        .ok { color: var(--ok); font-weight: 700; }
-        .err { color: var(--err); font-weight: 700; }
-        .mono { font-family: Consolas, monospace; }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
 
-        @media (max-width: 760px) {
-            .row { grid-template-columns: 1fr; }
+        tr:last-child td { border-bottom: none; }
+        
+        /* Анимация появления новой строки */
+        @keyframes highlight {
+            0% { background: #dcfce7; transform: translateX(-5px); }
+            100% { background: transparent; transform: translateX(0); }
+        }
+        .new-row { animation: highlight 1.5s ease-out; }
+
+        /* Статус-пилюли */
+        .status-pill {
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 11px;
+            display: inline-flex;
+            align-items: center;
+        }
+        .status-ok { background: #dcfce7; color: #166534; }
+        .status-err { background: #fee2e2; color: #991b1b; }
+        .status-wait { background: #fef9c3; color: #854d0e; }
+
+        .mono { font-family: 'JetBrains Mono', 'Cascadia Code', monospace; font-size: 12px; color: var(--muted); }
+
+        @media (max-width: 768px) {
+            .upload-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
+
 <div class="container">
     <div class="card">
-        <div class="project-badge">Проект 1</div>
-        <h1>Загрузка двух файлов</h1>
-        <p class="sub">Endpoint: <code>/api/v1/upload/</code></p>
+        <div class="project-badge">Проект 1 — Kaspi Lab</div>
+        <h1>Загрузка и обработка файлов</h1>
+        <p class="sub">Активный Endpoint: <code>/api/v1/upload/</code></p>
 
-        <div style="border:1px solid #0f766e; background:#ecfeff; border-radius:10px; padding:12px; margin-bottom:14px;">
-            <strong>Информация для жюри</strong>
-            <div style="margin-top:8px; color:#0f172a; font-size:13px; line-height:1.5;">
-                Деплой-версия сервиса для вашего удобства:
-                <a href="https://kaspi.icod.kz/" target="_blank" rel="noopener noreferrer">kaspi.icod.kz</a>.
+        <div class="info-panel">
+            <strong>Информация для проверки:</strong>
+            <div style="margin-top:8px;">
+                • Live версия: <a href="https://kaspi.icod.kz/" target="_blank">kaspi.icod.kz</a><br>
+                • Панель хранения: <a href="https://minio-ui.icod.kz/browser/kaspi-lab-public/" target="_blank">S3 Browser</a>
             </div>
-            <div style="margin-top:6px; color:#0f172a; font-size:13px; line-height:1.5;">
-                Панель ваших загрузок в S3 Storage:
-                <a href="https://minio-ui.icod.kz/browser/kaspi-lab-public/" target="_blank" rel="noopener noreferrer">MinIO Browser (kaspi-lab-public)</a>.
-            </div>
-            <div style="margin-top:8px; color:#0f172a; font-size:13px; line-height:1.5;">
-                Рекомендуем активно тестировать API endpoint'ы напрямую: через API доступно больше backend-сценариев.
-            </div>
-            <div style="margin-top:8px; font-size:13px;">
-                <div><code>GET /api/v1/</code></div>
-                <div><code>POST /api/v1/upload/</code> (multipart, поле <code>file</code>)</div>
-                <div><code>GET /api/v1/db/files</code></div>
-                <div><code>GET /api/v1/storage/files</code></div>
-            </div>
-            <div style="margin-top:8px; color:#0f172a; font-size:13px; line-height:1.5;">
-                Проект развернут в Docker и принимает трафик через прокси. В инфраструктуре используются внешние зависимости: Redis, PostgreSQL, Celery и S3/MinIO в общей сети.
+<div class="warning-box">
+    <div class="api-list">
+
+        <div class="api-item">
+            <code>GET (HEALTH)</code>
+            <a href="https://kaspi.icod.kz/api/v1/" target="_blank">
+                https://kaspi.icod.kz/api/v1/ 
+            </a>
+        </div>
+
+        <div class="api-item">
+            <code>POST</code>
+            <span>/api/v1/upload/</span>
+            <span class="api-note">(multipart, поле <code>file</code>)</span>
+        </div>
+
+        <div class="api-item">
+            <code>GET</code>
+            <a href="https://kaspi.icod.kz/api/v1/db/files" target="_blank">
+                https://kaspi.icod.kz/api/v1/db/files
+            </a>
+        </div>
+
+        <div class="api-item">
+            <code>GET</code>
+            <a href="https://kaspi.icod.kz/api/v1/storage/files" target="_blank">
+                https://kaspi.icod.kz/api/v1/storage/files
+            </a>
+        </div>
+
+    </div>
+
+    <div class="api-tip">
+        
+        При загрузке тяжёлых файлов (100MB+) браузер может долго удерживать соединение
+        перед получением ответа. Для стресс-тестов используйте прямые вызовы API.
+    </div>
+</div>
+
+        </div>
+
+<form id="uploadForm">
+    <div class="upload-grid">
+        <div class="file-input-group">
+            <label for="fileA">Файл A (обязательно)</label>
+            <input id="fileA" type="file" required>
+            <div id="pA" class="progress-container">
+                <div class="progress-bar" id="barA"></div>
             </div>
         </div>
 
-        <form id="uploadForm">
-            <div class="row">
-                <div>
-                    <label for="fileA">Файл A</label>
-                    <input id="fileA" name="fileA" type="file" required>
-                </div>
-                <div>
-                    <label for="fileB">Файл B</label>
-                    <input id="fileB" name="fileB" type="file" required>
-                </div>
+        <div class="file-input-group">
+            <label for="fileB">Файл B (обязательно)</label>
+            <input id="fileB" type="file" required>
+            <div id="pB" class="progress-container">
+                <div class="progress-bar" id="barB"></div>
             </div>
-            <button id="submitBtn" type="submit">Добавить в обработку</button>
-        </form>
+        </div>
+    </div>
 
-        <div class="table-wrap" style="margin-top: 14px;">
-            <table>
+    <div class="upload-warning" style="padding: 20px;">
+        <strong>Важно:</strong> при отправке формы на сервер одновременно будут отправлены 
+        <strong>2 параллельных запроса</strong> в <code>POST /api/v1/upload/</code> — по одному на каждый файл.
+        Сервер должен корректно обрабатывать конкурентную загрузку.
+    </div>
+
+    <button id="submitBtn" type="submit">Отправить в обработку</button>
+</form>
+
+
+        <div class="table-wrap">
+            <table id="uploadLogTable">
                 <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Файл</th>
-                    <th>HTTP</th>
-                    <th>Статус</th>
-                    <th>Сообщение</th>
-                </tr>
+                    <tr>
+                        <th width="50">#</th>
+                        <th>Имя файла</th>
+                        <th width="150">Прогресс</th>
+                        <th>Статус / Ответ сервера</th>
+                    </tr>
                 </thead>
-                <tbody id="resultBody"></tbody>
+                <tbody id="uploadQueue">
+                    <tr>
+                        <td colspan="4" style="text-align:center; padding:20px; color:var(--muted)">Очередь загрузки пуста</td>
+                    </tr>
+                </tbody>
             </table>
         </div>
     </div>
 
     <div class="card">
-        <h2>Данные из БД</h2>
-        <p class="sub" id="dbInfo">Загрузка...</p>
+        <h2 style="justify-content: space-between;">
+            <span>🗄️ Состояние базы данных</span>
+            <span id="dbBadge" class="status-pill status-wait">Ожидание данных...</span>
+        </h2>
         <div class="table-wrap">
             <table>
                 <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>UUID</th>
-                    <th>Дата</th>
-                    <th>Имя</th>
-                    <th>Размер</th>
-                    <th>Hash</th>
-                    <th>Ссылка</th>
-                </tr>
+                    <tr>
+                        <th width="100">UUID (ID)</th>
+                        <th>Название файла</th>
+                        <th width="100">Размер</th>
+                        <th width="120">Дата загрузки</th>
+                        <th>Хеш-сумма</th>
+                        <th width="80">Действие</th>
+                    </tr>
                 </thead>
-                <tbody id="dbBody"></tbody>
+                <tbody id="dbBody">
+                    </tbody>
             </table>
         </div>
     </div>
 
     <div class="card">
-        <h2>Данные из Storage</h2>
-        <p class="sub" id="s3Info">Загрузка...</p>
+        <h2 style="justify-content: space-between;">
+            <span>☁️ Хранилище S3 (Object Storage)</span>
+            <span id="s3Badge" class="status-pill status-wait">Синхронизация...</span>
+        </h2>
         <div class="table-wrap">
             <table>
                 <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>UUID</th>
-                    <th>Дата</th>
-                    <th>Имя</th>
-                    <th>Размер</th>
-                    <th>Hash</th>
-                    <th>Ссылка</th>
-                </tr>
+                    <tr>
+                        <th width="100">UUID</th>
+                        <th>OBJECT NAME</th>
+                        <th width="100">SIZE</th>
+                        <th width="120">UPLOAD DATE</th>
+                        <th>HASH</th>
+                        <th width="80">ACTION</th>
+                    </tr>
                 </thead>
-                <tbody id="s3Body"></tbody>
+                <tbody id="s3Body">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>API Endpoints and Responses</h2>
+        <p class="sub">Detailed contract for available backend endpoints.</p>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="220">METHOD + PATH</th>
+                        <th width="160">STATUS CODES</th>
+                        <th>RESPONSE EXAMPLE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>GET /</code></td>
+                        <td>200</td>
+                        <td>HTML page <code>index</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>GET /api/v1/</code></td>
+                        <td>200</td>
+                        <td>
+                            <pre><code>{"success": true, "msg": "API v1 работает."}</code></pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>POST /api/v1/upload/</code><br><small>multipart/form-data, field: <code>file</code></small></td>
+                        <td>202, 400, 409, 500</td>
+                        <td>
+                            <pre><code>202: {"success": true,  "msg": "Файл принят в обработку."}
+409: {"success": false, "msg": "Файл с таким содержимым уже обрабатывается."}
+409: {"success": false, "msg": "Файл с таким hash уже существует в базе данных."}
+400: {"success": false, "msg": "Файл не передан в запросе."}
+500: {"success": false, "msg": "Внутренняя ошибка контроллера: ..."}</code></pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>GET /api/v1/db/files</code></td>
+                        <td>200, 500</td>
+                        <td>
+                            <pre><code>200: {"success": true, "msg": "...", "files": [{"id": 1, "uuid": "...", "uploadDate": "...", "name": "...", "size": 123, "hash": "...", "url": "..."}]}
+500: {"success": false, "msg": "Не удалось получить список файлов из базы данных: ..."}</code></pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>GET /api/v1/storage/files</code></td>
+                        <td>200, 500</td>
+                        <td>
+                            <pre><code>200: {"success": true, "msg": "...", "files": [{"id": null, "uuid": null, "uploadDate": "...", "name": "...", "size": 123, "hash": null, "url": "..."}]}
+500: {"success": false, "msg": "Не удалось получить список файлов из S3: ..."}</code></pre>
+                        </td>
+                    </tr>
+                </tbody>
             </table>
         </div>
     </div>
 </div>
 
 <script>
-    const API_UPLOAD_URL = '/api/v1/upload/';
-    const API_DB_URL = '/api/v1/db/files';
-    const API_S3_URL = '/api/v1/storage/files';
+const API = {
+    upload: '/api/v1/upload/',
+    db: '/api/v1/db/files',
+    storage: '/api/v1/storage/files'
+};
 
-    const form = document.getElementById('uploadForm');
-    const submitBtn = document.getElementById('submitBtn');
-    const resultBody = document.getElementById('resultBody');
-    const dbBody = document.getElementById('dbBody');
-    const s3Body = document.getElementById('s3Body');
-    const dbInfo = document.getElementById('dbInfo');
-    const s3Info = document.getElementById('s3Info');
+const form = document.getElementById('uploadForm');
+const submitBtn = document.getElementById('submitBtn');
+const uploadQueue = document.getElementById('uploadQueue');
+const dbBody = document.getElementById('dbBody');
+const s3Body = document.getElementById('s3Body');
+const dbBadge = document.getElementById('dbBadge');
+const s3Badge = document.getElementById('s3Badge');
 
-    window.addEventListener('load', async () => {
-        await refreshTables();
-    });
+let renderedUuids = new Set();
 
-    form.addEventListener('submit', async (event) => {
-        event.preventDefault();
+window.addEventListener('load', () => {
+    refreshAllData();
+    setInterval(refreshAllData, 1500);
+});
 
-        const fileA = document.getElementById('fileA').files[0];
-        const fileB = document.getElementById('fileB').files[0];
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-        if (!fileA || !fileB) {
-            alert('Нужно выбрать оба файла.');
-            return;
-        }
+    const fileA = document.getElementById('fileA').files[0];
+    const fileB = document.getElementById('fileB').files[0];
 
-        submitBtn.disabled = true;
-        resultBody.innerHTML = '';
+    if (!fileA || !fileB) {
+        alert('Пожалуйста, выберите оба файла!');
+        return;
+    }
 
-        const tasks = [fileA, fileB].map((file, index) => uploadOne(file, index + 1));
-        await Promise.all(tasks);
-        await refreshTables();
+    submitBtn.disabled = true;
 
-        submitBtn.disabled = false;
-    });
+    if (uploadQueue.innerText.includes('пуста')) {
+        uploadQueue.innerHTML = '';
+    }
 
-    async function uploadOne(file, index) {
+    const tasks = [
+        uploadFileWithProgress(fileA, 1, 'pA', 'barA'),
+        uploadFileWithProgress(fileB, 2, 'pB', 'barB')
+    ];
+
+    await Promise.all(tasks);
+
+    submitBtn.disabled = false;
+    form.reset();
+    refreshAllData();
+});
+
+function uploadFileWithProgress(file, id, containerId, barId) {
+    return new Promise((resolve) => {
         const formData = new FormData();
         formData.append('file', file);
 
-        try {
-            const response = await fetch(API_UPLOAD_URL, {
-                method: 'POST',
-                body: formData
-            });
+        const xhr = new XMLHttpRequest();
+        const container = document.getElementById(containerId);
+        const bar = document.getElementById(barId);
 
-            const payload = await response.json().catch(() => ({}));
-            const ok = response.ok && payload.success !== false && payload.sucess !== false;
-            const msg = payload.msg || (ok ? 'Успешно' : 'Ошибка без сообщения');
-            appendUploadRow(index, file.name, response.status, ok, msg);
-        } catch (error) {
-            appendUploadRow(index, file.name, 'NETWORK', false, `Ошибка сети: ${error.message || error}`);
-        }
-    }
+        container.style.display = 'block';
+        bar.style.width = '0%';
 
-    async function refreshTables() {
-        const [dbPayload, s3Payload] = await Promise.all([fetchJson(API_DB_URL), fetchJson(API_S3_URL)]);
-        renderFilesTable(dbBody, dbInfo, dbPayload, 'БД');
-        renderFilesTable(s3Body, s3Info, s3Payload, 'Storage');
-    }
-
-    async function fetchJson(url) {
-        try {
-            const response = await fetch(url, { method: 'GET' });
-            const payload = await response.json().catch(() => ({}));
-            payload.__http = response.status;
-            return payload;
-        } catch (e) {
-            return { success: false, msg: `Ошибка сети: ${e.message || e}`, files: [], __http: 'NETWORK' };
-        }
-    }
-
-    function renderFilesTable(bodyEl, infoEl, payload, sourceName) {
-        const files = Array.isArray(payload.files) ? payload.files : [];
-        const success = payload.success !== false && payload.sucess !== false;
-        const msg = payload.msg || '';
-
-        infoEl.textContent = `${sourceName}: ${success ? 'OK' : 'ERROR'} | HTTP: ${payload.__http} | ${msg} | Записей: ${files.length}`;
-        bodyEl.innerHTML = '';
-
-        if (!files.length) {
-            const tr = document.createElement('tr');
-            tr.innerHTML = '<td colspan="7">Нет данных</td>';
-            bodyEl.appendChild(tr);
-            return;
-        }
-
-        for (const file of files) {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="mono">${safe(file.id)}</td>
-                <td class="mono">${safe(file.uuid)}</td>
-                <td>${safe(file.uploadDate)}</td>
-                <td>${safe(file.name)}</td>
-                <td class="mono">${safe(file.size)}</td>
-                <td class="mono">${safe(file.hash)}</td>
-                <td>${file.url ? `<a href="${escapeHtml(file.url)}" target="_blank" rel="noopener noreferrer">Открыть</a>` : '-'}</td>
-            `;
-            bodyEl.appendChild(tr);
-        }
-    }
-
-    function appendUploadRow(index, fileName, httpCode, ok, message) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${index}</td>
-            <td>${escapeHtml(fileName)}</td>
-            <td>${httpCode}</td>
-            <td class="${ok ? 'ok' : 'err'}">${ok ? 'OK' : 'ERROR'}</td>
-            <td>${escapeHtml(message)}</td>
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="mono">${id}</td>
+            <td><strong>${escapeHtml(file.name)}</strong></td>
+            <td id="pct-${containerId}">Готовность: 0%</td>
+            <td id="status-${containerId}"><span class="status-pill status-wait">Загрузка...</span></td>
         `;
-        resultBody.appendChild(tr);
+        uploadQueue.prepend(row);
+
+        xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+                const percent = Math.round((event.loaded / event.total) * 100);
+                bar.style.width = percent + '%';
+                document.getElementById(`pct-${containerId}`).innerText = `Загружено: ${percent}%`;
+            }
+        };
+
+        xhr.onload = () => {
+            container.style.display = 'none';
+            const statusCell = document.getElementById(`status-${containerId}`);
+            const resp = parseJsonSafe(xhr.responseText);
+
+            if (xhr.status >= 200 && xhr.status < 300) {
+                const okMsg = resp.msg || 'Успешно';
+                statusCell.innerHTML = `<span class="status-pill status-ok">OK</span> <small>${escapeHtml(okMsg)}</small>`;
+            } else {
+                const errMsg = resp.msg || resp.message || xhr.statusText || 'Без описания';
+                statusCell.innerHTML = `<span class="status-pill status-err">Ошибка ${xhr.status}</span> <small>${escapeHtml(errMsg)}</small>`;
+            }
+            resolve();
+        };
+
+        xhr.onerror = () => {
+            container.style.display = 'none';
+            document.getElementById(`status-${containerId}`).innerHTML = `<span class="status-pill status-err">Network Error</span> <small>Не удалось связаться с сервером</small>`;
+            resolve();
+        };
+
+        xhr.open('POST', API.upload);
+        xhr.send(formData);
+    });
+}
+
+async function refreshAllData() {
+    const [dbResult, s3Result] = await Promise.allSettled([
+        fetchJsonWithDetails(API.db),
+        fetchJsonWithDetails(API.storage)
+    ]);
+
+    if (dbResult.status === 'fulfilled') {
+        renderTable(dbBody, dbResult.value.files || [], dbBadge);
+    } else {
+        updateBadgeError(dbBadge, dbResult.reason);
+        dbBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Нет данных</td></tr>';
+        console.error('Ошибка DB API:', dbResult.reason);
     }
 
-    function safe(value) {
-        return value === null || value === undefined || value === '' ? '-' : escapeHtml(value);
+    if (s3Result.status === 'fulfilled') {
+        renderTable(s3Body, s3Result.value.files || [], s3Badge);
+    } else {
+        updateBadgeError(s3Badge, s3Result.reason);
+        s3Body.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Нет данных</td></tr>';
+        console.error('Ошибка S3 API:', s3Result.reason);
+    }
+}
+
+function renderTable(tbody, files, badge) {
+    files.sort((a, b) => (b.id || 0) - (a.id || 0));
+
+    badge.innerText = `Подключено | Записей: ${files.length}`;
+    badge.className = 'status-pill status-ok';
+
+    let rowsHtml = '';
+    files.forEach(file => {
+        const uuid = file.uuid || 'N/A';
+        const isNew = !renderedUuids.has(uuid);
+        const rowClass = isNew ? 'new-row' : '';
+        if (isNew) renderedUuids.add(uuid);
+
+        const fileName = file.name || 'Без имени';
+        const uploadDate = file.uploadDate || '-';
+        const hashFull = file.hash || '';
+        const hashShort = hashFull ? `${hashFull.substring(0, 12)}...` : '-';
+
+        rowsHtml += `
+            <tr class="${rowClass}">
+                <td>
+                    <div class="mono" style="color:var(--text); font-weight:600">${escapeHtml(uuid.substring(0, 8))}...</div>
+                    <div style="font-size:10px; color:var(--muted)">ID: ${escapeHtml(file.id || '-')}</div>
+                </td>
+                <td><strong>${escapeHtml(fileName)}</strong></td>
+                <td class="mono">${formatSize(file.size)}</td>
+                <td><small>${escapeHtml(uploadDate)}</small></td>
+                <td class="mono" title="${escapeHtml(hashFull)}">${escapeHtml(hashShort)}</td>
+                <td>
+                    ${file.url ? `<a href="${escapeHtml(file.url)}" target="_blank" rel="noopener noreferrer" style="color:var(--primary); font-weight:bold; text-decoration:none">Открыть</a>` : '-'}
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = rowsHtml || '<tr><td colspan="6" style="text-align:center; padding:20px;">Нет данных</td></tr>';
+}
+
+function formatSize(bytes) {
+    if (!bytes) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+async function fetchJsonWithDetails(url) {
+    const response = await fetch(url);
+    const text = await response.text();
+    const payload = parseJsonSafe(text);
+
+    if (!response.ok) {
+        const msg = payload.msg || payload.message || response.statusText || 'Без описания';
+        throw { status: response.status, msg };
     }
 
-    function escapeHtml(value) {
-        return String(value)
-            .replaceAll('&', '&amp;')
-            .replaceAll('<', '&lt;')
-            .replaceAll('>', '&gt;')
-            .replaceAll('"', '&quot;')
-            .replaceAll("'", '&#39;');
+    return payload;
+}
+
+function parseJsonSafe(raw) {
+    if (!raw) return {};
+    try {
+        return JSON.parse(raw);
+    } catch (_) {
+        return {};
     }
+}
+
+function updateBadgeError(badge, err) {
+    const status = err && err.status ? ` ${err.status}` : '';
+    const msg = err && err.msg ? `: ${err.msg}` : '';
+    badge.innerText = `Ошибка API${status}${msg}`;
+    badge.className = 'status-pill status-err';
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
 </script>
+
 </body>
 </html>
+

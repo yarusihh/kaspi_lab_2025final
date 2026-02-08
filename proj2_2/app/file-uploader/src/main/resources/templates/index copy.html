@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Проект 1 - Kaspi File Uploader</title>
+    <style>
+        :root {
+            --primary: #0f766e;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --border: #dbe1ea;
+            --ok: #16a34a;
+            --err: #dc2626;
+            --text: #0f172a;
+            --muted: #64748b;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Segoe UI, Tahoma, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #edf3f9 100%);
+            color: var(--text);
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+        }
+
+        h1, h2 { margin: 0 0 10px; }
+
+        .project-badge {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 700;
+            color: #0f766e;
+            background: #ecfeff;
+            border: 1px solid #99f6e4;
+            border-radius: 999px;
+            padding: 6px 10px;
+            margin-bottom: 10px;
+        }
+
+        .sub {
+            margin: 0 0 14px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        form {
+            display: grid;
+            gap: 12px;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 9px;
+            background: #fff;
+        }
+
+        button {
+            border: 0;
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            color: #fff;
+            background: var(--primary);
+        }
+
+        button:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+
+        .table-wrap { overflow-x: auto; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 760px;
+        }
+
+        th, td {
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+            padding: 10px 8px;
+            font-size: 13px;
+            vertical-align: top;
+        }
+
+        th {
+            color: var(--muted);
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .02em;
+            white-space: nowrap;
+        }
+
+        .ok { color: var(--ok); font-weight: 700; }
+        .err { color: var(--err); font-weight: 700; }
+        .mono { font-family: Consolas, monospace; }
+
+        @media (max-width: 760px) {
+            .row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <div class="project-badge">Проект 1</div>
+        <h1>Загрузка двух файлов</h1>
+        <p class="sub">Endpoint: <code>/api/v1/upload/</code></p>
+
+        <div style="border:1px solid #0f766e; background:#ecfeff; border-radius:10px; padding:12px; margin-bottom:14px;">
+            <strong>Информация для жюри</strong>
+            <div style="margin-top:8px; color:#0f172a; font-size:13px; line-height:1.5;">
+                Деплой-версия сервиса для вашего удобства:
+                <a href="https://kaspi.icod.kz/" target="_blank" rel="noopener noreferrer">kaspi.icod.kz</a>.
+            </div>
+            <div style="margin-top:6px; color:#0f172a; font-size:13px; line-height:1.5;">
+                Панель ваших загрузок в S3 Storage:
+                <a href="https://minio-ui.icod.kz/browser/kaspi-lab-public/" target="_blank" rel="noopener noreferrer">MinIO Browser (kaspi-lab-public)</a>.
+            </div>
+            <div style="margin-top:8px; color:#0f172a; font-size:13px; line-height:1.5;">
+                Рекомендуем активно тестировать API endpoint'ы напрямую: через API доступно больше backend-сценариев.
+            </div>
+            <div style="margin-top:8px; font-size:13px;">
+                <div><code>GET /api/v1/</code></div>
+                <div><code>POST /api/v1/upload/</code> (multipart, поле <code>file</code>)</div>
+                <div><code>GET /api/v1/db/files</code></div>
+                <div><code>GET /api/v1/storage/files</code></div>
+            </div>
+            <div style="margin-top:8px; color:#0f172a; font-size:13px; line-height:1.5;">
+                Проект развернут в Docker и принимает трафик через прокси. В инфраструктуре используются внешние зависимости: Redis, PostgreSQL, Celery и S3/MinIO в общей сети.
+            </div>
+        </div>
+
+        <form id="uploadForm">
+            <div class="row">
+                <div>
+                    <label for="fileA">Файл A</label>
+                    <input id="fileA" name="fileA" type="file" required>
+                </div>
+                <div>
+                    <label for="fileB">Файл B</label>
+                    <input id="fileB" name="fileB" type="file" required>
+                </div>
+            </div>
+            <button id="submitBtn" type="submit">Добавить в обработку</button>
+        </form>
+
+        <div class="table-wrap" style="margin-top: 14px;">
+            <table>
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Файл</th>
+                    <th>HTTP</th>
+                    <th>Статус</th>
+                    <th>Сообщение</th>
+                </tr>
+                </thead>
+                <tbody id="resultBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Данные из БД</h2>
+        <p class="sub" id="dbInfo">Загрузка...</p>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>UUID</th>
+                    <th>Дата</th>
+                    <th>Имя</th>
+                    <th>Размер</th>
+                    <th>Hash</th>
+                    <th>Ссылка</th>
+                </tr>
+                </thead>
+                <tbody id="dbBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Данные из Storage</h2>
+        <p class="sub" id="s3Info">Загрузка...</p>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>UUID</th>
+                    <th>Дата</th>
+                    <th>Имя</th>
+                    <th>Размер</th>
+                    <th>Hash</th>
+                    <th>Ссылка</th>
+                </tr>
+                </thead>
+                <tbody id="s3Body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_UPLOAD_URL = '/api/v1/upload/';
+    const API_DB_URL = '/api/v1/db/files';
+    const API_S3_URL = '/api/v1/storage/files';
+
+    const form = document.getElementById('uploadForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const resultBody = document.getElementById('resultBody');
+    const dbBody = document.getElementById('dbBody');
+    const s3Body = document.getElementById('s3Body');
+    const dbInfo = document.getElementById('dbInfo');
+    const s3Info = document.getElementById('s3Info');
+
+    window.addEventListener('load', async () => {
+        await refreshTables();
+    });
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const fileA = document.getElementById('fileA').files[0];
+        const fileB = document.getElementById('fileB').files[0];
+
+        if (!fileA || !fileB) {
+            alert('Нужно выбрать оба файла.');
+            return;
+        }
+
+        submitBtn.disabled = true;
+        resultBody.innerHTML = '';
+
+        const tasks = [fileA, fileB].map((file, index) => uploadOne(file, index + 1));
+        await Promise.all(tasks);
+        await refreshTables();
+
+        submitBtn.disabled = false;
+    });
+
+    async function uploadOne(file, index) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch(API_UPLOAD_URL, {
+                method: 'POST',
+                body: formData
+            });
+
+            const payload = await response.json().catch(() => ({}));
+            const ok = response.ok && payload.success !== false && payload.sucess !== false;
+            const msg = payload.msg || (ok ? 'Успешно' : 'Ошибка без сообщения');
+            appendUploadRow(index, file.name, response.status, ok, msg);
+        } catch (error) {
+            appendUploadRow(index, file.name, 'NETWORK', false, `Ошибка сети: ${error.message || error}`);
+        }
+    }
+
+    async function refreshTables() {
+        const [dbPayload, s3Payload] = await Promise.all([fetchJson(API_DB_URL), fetchJson(API_S3_URL)]);
+        renderFilesTable(dbBody, dbInfo, dbPayload, 'БД');
+        renderFilesTable(s3Body, s3Info, s3Payload, 'Storage');
+    }
+
+    async function fetchJson(url) {
+        try {
+            const response = await fetch(url, { method: 'GET' });
+            const payload = await response.json().catch(() => ({}));
+            payload.__http = response.status;
+            return payload;
+        } catch (e) {
+            return { success: false, msg: `Ошибка сети: ${e.message || e}`, files: [], __http: 'NETWORK' };
+        }
+    }
+
+    function renderFilesTable(bodyEl, infoEl, payload, sourceName) {
+        const files = Array.isArray(payload.files) ? payload.files : [];
+        const success = payload.success !== false && payload.sucess !== false;
+        const msg = payload.msg || '';
+
+        infoEl.textContent = `${sourceName}: ${success ? 'OK' : 'ERROR'} | HTTP: ${payload.__http} | ${msg} | Записей: ${files.length}`;
+        bodyEl.innerHTML = '';
+
+        if (!files.length) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td colspan="7">Нет данных</td>';
+            bodyEl.appendChild(tr);
+            return;
+        }
+
+        for (const file of files) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="mono">${safe(file.id)}</td>
+                <td class="mono">${safe(file.uuid)}</td>
+                <td>${safe(file.uploadDate)}</td>
+                <td>${safe(file.name)}</td>
+                <td class="mono">${safe(file.size)}</td>
+                <td class="mono">${safe(file.hash)}</td>
+                <td>${file.url ? `<a href="${escapeHtml(file.url)}" target="_blank" rel="noopener noreferrer">Открыть</a>` : '-'}</td>
+            `;
+            bodyEl.appendChild(tr);
+        }
+    }
+
+    function appendUploadRow(index, fileName, httpCode, ok, message) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${index}</td>
+            <td>${escapeHtml(fileName)}</td>
+            <td>${httpCode}</td>
+            <td class="${ok ? 'ok' : 'err'}">${ok ? 'OK' : 'ERROR'}</td>
+            <td>${escapeHtml(message)}</td>
+        `;
+        resultBody.appendChild(tr);
+    }
+
+    function safe(value) {
+        return value === null || value === undefined || value === '' ? '-' : escapeHtml(value);
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+</script>
+</body>
+</html>
